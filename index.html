@@ -615,7 +615,7 @@ footer {
 
     </style>
     <title>ZIGGY PLAYER</title>
-    <!-- Standalone repair build v1.2 -->
+    <!-- Standalone repair build v1.3: iPhone chunked audio storage -->
   </head>
   <body>
     <main class="app-shell">
@@ -821,6 +821,9 @@ const SONGS = [
 const DB_NAME = "ziggy-player-private-media";
 const DB_VERSION = 1;
 const STORE_NAME = "songs";
+// iPhone Safari can reject a large File/Blob when it is written as one
+// IndexedDB record. Keep the audio in small ArrayBuffer records instead.
+const AUDIO_CHUNK_SIZE = 1024 * 1024;
 
 const $ = (id) => document.getElementById(id);
 const audio = $("audioPlayer");
@@ -898,6 +901,52 @@ async function getSongRecord(id) {
 
 async function saveSongRecord(record) {
   await withStore("readwrite", (store) => store.put(record));
+}
+
+async function deleteSongRecord(id) {
+  await withStore("readwrite", (store) => store.delete(id));
+}
+
+function audioChunkId(songId, index) {
+  return `${songId}:audio:${index}`;
+}
+
+function hasStoredAudio(record) {
+  return Boolean(record?.audioBlob || record?.audioChunkCount > 0);
+}
+
+async function storeAudioInChunks(songId, file, oldChunkCount = 0) {
+  const chunkCount = Math.ceil(file.size / AUDIO_CHUNK_SIZE);
+
+  for (let index = 0; index < chunkCount; index += 1) {
+    const start = index * AUDIO_CHUNK_SIZE;
+    const end = Math.min(start + AUDIO_CHUNK_SIZE, file.size);
+    const bytes = await file.slice(start, end).arrayBuffer();
+    await saveSongRecord({ id: audioChunkId(songId, index), bytes });
+  }
+
+  for (let index = chunkCount; index < oldChunkCount; index += 1) {
+    await deleteSongRecord(audioChunkId(songId, index));
+  }
+
+  return {
+    audioChunkCount: chunkCount,
+    audioType: file.type || "audio/mp4",
+    audioSize: file.size,
+  };
+}
+
+async function readStoredAudio(record) {
+  // Backward compatibility for files saved by the first version.
+  if (record.audioBlob) return record.audioBlob;
+
+  const parts = [];
+  for (let index = 0; index < record.audioChunkCount; index += 1) {
+    const chunk = await getSongRecord(audioChunkId(record.id, index));
+    if (!chunk?.bytes) throw new Error("音源の保存が途中です。音源だけ選び直してください。");
+    parts.push(chunk.bytes);
+  }
+  return new Blob(parts, { type: record.audioType || "audio/mp4" });
 }
 
 function normalizeIndex(index) {
@@ -1032,7 +1081,7 @@ async function loadSong(index, { autoplay = false, direction = null } = {}) {
   try {
     const record = await getSongRecord(song.id);
     if (token !== state.loadToken) return;
-    if (!record?.audioBlob || !record?.lyricsText) {
+    if (!hasStoredAudio(record) || !record?.lyricsText) {
       revokeAudioUrl();
       audio.removeAttribute("src");
       audio.load();
@@ -1044,7 +1093,9 @@ async function loadSong(index, { autoplay = false, direction = null } = {}) {
     const parsed = parseLrc(record.lyricsText);
     state.lyrics = parsed.entries;
     revokeAudioUrl();
-    state.objectUrl = URL.createObjectURL(record.audioBlob);
+    const audioBlob = await readStoredAudio(record);
+    if (token !== state.loadToken) return;
+    state.objectUrl = URL.createObjectURL(audioBlob);
     audio.src = state.objectUrl;
     audio.load();
     renderLyrics(-1, false);
@@ -1119,9 +1170,9 @@ async function refreshSetupStatus() {
     const lyricsName = article.querySelector('[data-file-name="lyrics"]');
     audioName.textContent = record?.audioName || "未選択";
     lyricsName.textContent = record?.lyricsName || "未選択";
-    audioName.classList.toggle("stored", Boolean(record?.audioBlob));
+    audioName.classList.toggle("stored", hasStoredAudio(record));
     lyricsName.classList.toggle("stored", Boolean(record?.lyricsText));
-    if (record?.audioBlob && record?.lyricsText) readyCount += 1;
+    if (hasStoredAudio(record) && record?.lyricsText) readyCount += 1;
   }
 
   state.allSongsReady = readyCount === SONGS.length;
@@ -1164,10 +1215,19 @@ async function saveSetup() {
       const existing = (await getSongRecord(song.id)) || { id: song.id };
       const audioFile = state.pendingFiles.get(`${song.id}:audio`);
       const lyricsFile = state.pendingFiles.get(`${song.id}:lyrics`);
+      const audioStorage = audioFile
+        ? await storeAudioInChunks(song.id, audioFile, existing.audioChunkCount || 0)
+        : {
+            audioChunkCount: existing.audioChunkCount,
+            audioType: existing.audioType,
+            audioSize: existing.audioSize,
+          };
       const record = {
         ...existing,
         id: song.id,
-        audioBlob: audioFile || existing.audioBlob,
+        // A newly selected file is saved in chunks, not in this record.
+        audioBlob: audioFile ? undefined : existing.audioBlob,
+        ...audioStorage,
         audioName: audioFile?.name || existing.audioName,
         lyricsText: lyricsFile ? await decodeLyricsFile(lyricsFile) : existing.lyricsText,
         lyricsName: lyricsFile?.name || existing.lyricsName,
@@ -1195,7 +1255,11 @@ async function saveSetup() {
     }, 500);
   } catch (error) {
     console.error(error);
-    setSetupMessage(error.message || "保存できませんでした。", true);
+    const detail = String(error?.message || "");
+    const friendlyMessage = /quota|store record|IDBObjectStore|space/i.test(detail)
+      ? "iPhoneの保存領域でエラーになりました。Safariの通常画面で開き、もう一度保存してください。"
+      : detail || "保存できませんでした。";
+    setSetupMessage(friendlyMessage, true);
   } finally {
     button.disabled = false;
   }
