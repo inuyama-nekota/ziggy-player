@@ -8,8 +8,8 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="ZIGGY PLAYER" />
     <meta name="description" content="STAY GOLDとGLORIAを楽しむ、端末内保存型の個人用プレイヤー" />
-    <link rel="apple-touch-icon" href="./apple-touch-icon.png?v=2" />
-    <link rel="icon" href="./apple-touch-icon.png?v=2" type="image/png" />
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png?v=3" />
+    <link rel="icon" href="./apple-touch-icon.png?v=3" type="image/png" />
     <style>
 :root {
   color-scheme: dark;
@@ -210,6 +210,38 @@ footer {
   font-weight: 800;
   letter-spacing: 0.025em;
   text-shadow: 0 0 1.2rem rgba(233, 184, 74, 0.22);
+}
+
+.song-title-english {
+  font-family: Didot, "Bodoni 72", "Bodoni 72 Smallcaps", "Bodoni MT", Georgia, serif;
+  font-style: italic;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+.song-title-japanese {
+  font-family: "MS Gothic", "ＭＳ ゴシック", Osaka-Mono, "Hiragino Kaku Gothic ProN", "Yu Gothic", monospace;
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: 0.055em;
+}
+
+.reel-current.song-title-english {
+  letter-spacing: -0.035em;
+  transform: skewX(-3deg);
+}
+
+.reel-current.song-title-japanese {
+  transform: scaleX(0.97);
+}
+
+.player-section h2.song-title-english {
+  font-size: 1.28rem;
+  letter-spacing: -0.02em;
+}
+
+.player-section h2.song-title-japanese {
+  letter-spacing: 0.045em;
 }
 
 .reel-selection {
@@ -656,7 +688,7 @@ footer {
 
     </style>
     <title>ZIGGY PLAYER</title>
-    <!-- Standalone build v1.6: custom Z icon and rock-style title -->
+    <!-- Standalone build v1.7: gold chrome icon and bilingual song-title typography -->
   </head>
   <body>
     <main class="app-shell">
@@ -994,16 +1026,24 @@ function normalizeIndex(index) {
   return (index + SONGS.length) % SONGS.length;
 }
 
+function applySongTitleStyle(element, title) {
+  const hasJapanese = /[\u3040-\u30ff\u3400-\u9fff\uf900-\ufaff\uff66-\uff9f]/u.test(title);
+  const isEnglishOnly = !hasJapanese;
+  element.textContent = title;
+  element.classList.toggle("song-title-english", isEnglishOnly);
+  element.classList.toggle("song-title-japanese", !isEnglishOnly);
+}
+
 function renderReel(direction = null) {
   const previous = SONGS[normalizeIndex(state.songIndex - 1)];
   const current = SONGS[state.songIndex];
   const next = SONGS[normalizeIndex(state.songIndex + 1)];
 
-  $("reelPrevious").textContent = previous.title;
-  $("reelCurrent").textContent = current.title;
+  applySongTitleStyle($("reelPrevious"), previous.title);
+  applySongTitleStyle($("reelCurrent"), current.title);
   $("reelCurrent").setAttribute("aria-label", `${current.title}、選択中`);
-  $("reelNext").textContent = next.title;
-  $("nowPlayingTitle").textContent = current.title;
+  applySongTitleStyle($("reelNext"), next.title);
+  applySongTitleStyle($("nowPlayingTitle"), current.title);
 
   if (direction) {
     reelLines.classList.remove("move-up", "move-down");
