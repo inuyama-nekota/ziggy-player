@@ -1,89 +1,24 @@
-# ZIGGY PLAYER
-
-iPhoneのSafariからホーム画面へ追加して使う、個人用の2曲プレイヤーです。
-
-曲は **STAY GOLD** と **GLORIA** の2曲に固定しています。音源（M4A）と同期歌詞（LRC）はWeb上へ公開せず、初回起動時にiPhoneの「ファイル」アプリから選びます。選んだデータはブラウザーの端末内保存領域（IndexedDB）へ保存されます。
-
-## できること
-
-- 曲名だけの縦リールで選曲
-- STAY GOLD / GLORIA のM4A再生
-- 再生、一時停止、前曲、次曲
-- 再生位置の移動
-- LRC同期歌詞を常に3行表示
-- 現在行を中央へ固定し、中央行だけ太字
-- 行切替時の縦スライド／フェード
-- 曲切替時に再生位置と歌詞位置を先頭へ戻す
-- ホーム画面からアプリ風に起動
-- アプリ本体のオフライン起動
-- ロック画面の再生操作（対応するiOSで利用可能）
-
-## いちばん簡単な使い方
-
-詳しい画面操作は [はじめかた.md](./はじめかた.md) を参照してください。
-
-1. このフォルダーの中身だけを、GitHubの公開リポジトリへアップロードします。
-2. GitHub Pagesを有効にします。
-3. 発行されたURLをiPhoneのSafariで開きます。
-4. Safariの共有メニューから「ホーム画面に追加」を選びます。
-5. 初回起動時、2曲それぞれのM4AとLRCを選んで保存します。
-
-> **重要:** M4AとLRCはGitHubへアップロードしないでください。本プロジェクトにも音源・歌詞データは含まれていません。
-
-## 必要な手元ファイル
-
-- `01 STAY GOLD.m4a`
-- `STAY GOLD.lrc`
-- `04 GLORIA.m4a`
-- `gloria.lrc`
-
-ファイル名が多少異なっていても動作します。初回設定画面で正しい曲の枠に選んでください。
-
-## ファイル構成
-
-```text
-ziggy-player-pwa/
-├─ index.html              画面構造と初回設定画面
-├─ styles.css              iPhone向けレイアウトとアニメーション
-├─ app.js                  再生、選曲、端末内保存、歌詞同期
-├─ lrc-parser.js           LRC解析と現在行検索
-├─ manifest.webmanifest    ホーム画面アプリ設定
-├─ service-worker.js       アプリ本体のオフライン保存
-├─ icons/                  ホーム画面アイコン
-├─ tests/                  LRC解析テスト
-├─ package.json            開発時のテスト設定
-├─ .nojekyll               GitHub Pages向け設定
-├─ はじめかた.md            GitHub PagesとiPhoneの操作手順
-└─ README.md               この文書
-```
-
-## PCでの確認方法（開発者向け）
-
-このフォルダーでローカルHTTPサーバーを起動し、表示されたURLをブラウザーで開きます。
-
-```sh
-python -m http.server 8000
-```
-
-構文チェックとLRC解析テスト:
-
-```sh
-npm run check
-npm test
-```
-
-外部ライブラリやビルド作業は不要です。
-
-## 保存とプライバシー
-
-- 音源と歌詞は外部サーバーへ送信しません。
-- GitHub Pagesに置かれるのは、プレイヤー本体だけです。
-- iPhoneでSafariのWebサイトデータを消去すると、登録した曲も消える場合があります。
-- 元のM4AとLRCは「ファイル」アプリやiCloud Driveへ残してください。
-- iPhoneの空き容量が極端に少ない場合、Webアプリの保存データが整理される可能性があります。その場合は4ファイルをもう一度登録します。
-
-## 対応範囲
-
-主対象はiPhoneのSafariおよび「ホーム画面に追加」したWebアプリです。iOSの安全制限により、最初の再生はユーザーが再生ボタンを押す必要があります。
-
-このプロトタイプは個人利用を前提としています。
+{
+  "name": "ZIGGY PLAYER",
+  "short_name": "ZIGGY",
+  "description": "STAY GOLDとGLORIAを楽しむ個人用プレイヤー",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#08080a",
+  "theme_color": "#0b0b0d",
+  "icons": [
+    {
+      "src": "./icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
