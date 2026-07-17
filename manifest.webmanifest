@@ -1,127 +1,24 @@
-<!doctype html>
-<html lang="ja">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#0b0b0d" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="ZIGGY PLAYER" />
-    <meta name="description" content="STAY GOLDとGLORIAを楽しむ、端末内保存型の個人用プレイヤー" />
-    <link rel="manifest" href="./manifest.webmanifest" />
-    <link rel="apple-touch-icon" href="./icons/icon-180.png" />
-    <link rel="icon" href="./icons/icon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="./styles.css" />
-    <title>ZIGGY PLAYER</title>
-  </head>
-  <body>
-    <main class="app-shell">
-      <header class="app-header">
-        <div>
-          <p class="eyebrow">PRIVATE MUSIC PLAYER</p>
-          <h1>ZIGGY <span>PLAYER</span></h1>
-        </div>
-        <button id="openSetupButton" class="icon-button" type="button" aria-label="音源と歌詞の設定を開く">⚙</button>
-      </header>
-
-      <section class="reel-section" aria-labelledby="songSelectTitle">
-        <h2 id="songSelectTitle" class="sr-only">曲を選ぶ</h2>
-        <p class="section-label">SONG SELECT</p>
-        <div id="songReel" class="song-reel" tabindex="0" role="listbox" aria-label="曲名リール">
-          <div class="reel-fade reel-fade-top" aria-hidden="true"></div>
-          <div id="reelLines" class="reel-lines" aria-live="polite">
-            <div id="reelPrevious" class="reel-line reel-side" aria-hidden="true"></div>
-            <div id="reelCurrent" class="reel-line reel-current" role="option" aria-selected="true"></div>
-            <div id="reelNext" class="reel-line reel-side" aria-hidden="true"></div>
-          </div>
-          <div class="reel-selection" aria-hidden="true"></div>
-          <div class="reel-fade reel-fade-bottom" aria-hidden="true"></div>
-        </div>
-        <p class="reel-hint">上下にスワイプして選曲</p>
-      </section>
-
-      <section class="player-section" aria-labelledby="nowPlayingTitle">
-        <p class="section-label">NOW PLAYING</p>
-        <h2 id="nowPlayingTitle">STAY GOLD</h2>
-
-        <div class="timeline">
-          <span id="currentTime">0:00</span>
-          <input id="seekBar" type="range" min="0" max="1000" value="0" aria-label="再生位置" />
-          <span id="durationTime">0:00</span>
-        </div>
-
-        <div class="controls" aria-label="再生操作">
-          <button id="previousButton" class="control-button secondary" type="button" aria-label="前の曲">⏮</button>
-          <button id="playButton" class="control-button primary" type="button" aria-label="再生">▶</button>
-          <button id="nextButton" class="control-button secondary" type="button" aria-label="次の曲">⏭</button>
-        </div>
-
-        <p id="playerMessage" class="player-message" role="status"></p>
-      </section>
-
-      <section class="lyrics-section" aria-labelledby="lyricsTitle">
-        <div class="lyrics-heading">
-          <p id="lyricsTitle" class="section-label">LYRICS</p>
-          <span>3 LINES</span>
-        </div>
-        <div class="lyrics-window" aria-live="polite" aria-atomic="true">
-          <div id="lyricsStack" class="lyrics-stack">
-            <p id="previousLyric" class="lyric-line lyric-side"></p>
-            <p id="currentLyric" class="lyric-line lyric-current">♪</p>
-            <p id="nextLyric" class="lyric-line lyric-side"></p>
-          </div>
-        </div>
-      </section>
-
-      <footer>
-        <span id="storageStatus">音源未設定</span>
-        <span class="privacy-mark">端末内保存</span>
-      </footer>
-    </main>
-
-    <audio id="audioPlayer" preload="metadata"></audio>
-
-    <div id="setupSheet" class="setup-overlay" aria-hidden="true">
-      <section class="setup-sheet" role="dialog" aria-modal="true" aria-labelledby="setupTitle">
-        <div class="setup-grabber" aria-hidden="true"></div>
-        <div class="setup-header">
-          <div>
-            <p class="eyebrow">FIRST TIME SETUP</p>
-            <h2 id="setupTitle">音源と歌詞を登録</h2>
-          </div>
-          <button id="closeSetupButton" class="icon-button" type="button" aria-label="設定を閉じる">×</button>
-        </div>
-
-        <p class="setup-intro">
-          ファイルはこのiPhone内だけに保存します。GitHubへ音源や歌詞が送信されることはありません。
-        </p>
-
-        <div id="setupSongs" class="setup-songs"></div>
-
-        <p id="setupMessage" class="setup-message" role="status"></p>
-        <button id="saveSetupButton" class="save-button" type="button">このiPhoneに保存</button>
-        <p class="setup-note">元の4ファイルは「ファイル」アプリにも残しておいてください。</p>
-      </section>
-    </div>
-
-    <template id="setupSongTemplate">
-      <article class="setup-song">
-        <h3></h3>
-        <div class="file-pickers">
-          <label class="file-picker">
-            <span class="file-picker-label">音源を選ぶ</span>
-            <span class="file-name" data-file-name="audio">未選択</span>
-            <input type="file" accept="audio/*,.m4a" data-kind="audio" />
-          </label>
-          <label class="file-picker">
-            <span class="file-picker-label">歌詞を選ぶ</span>
-            <span class="file-name" data-file-name="lyrics">未選択</span>
-            <input type="file" accept=".lrc,text/plain" data-kind="lyrics" />
-          </label>
-        </div>
-      </article>
-    </template>
-
-    <script type="module" src="./app.js"></script>
-  </body>
-</html>
+{
+  "name": "ZIGGY PLAYER",
+  "short_name": "ZIGGY",
+  "description": "STAY GOLDとGLORIAを楽しむ個人用プレイヤー",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#08080a",
+  "theme_color": "#0b0b0d",
+  "icons": [
+    {
+      "src": "./icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

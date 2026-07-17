@@ -1,89 +1,603 @@
-# ZIGGY PLAYER
+:root {
+  color-scheme: dark;
+  --background: #08080a;
+  --surface: #111116;
+  --surface-soft: #19191f;
+  --line: rgba(255, 255, 255, 0.1);
+  --text: #f6f4ef;
+  --muted: #8e8d94;
+  --gold: #e9b84a;
+  --gold-bright: #ffd873;
+  --danger: #ff8a80;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic UI", sans-serif;
+  background: var(--background);
+}
 
-iPhoneのSafariからホーム画面へ追加して使う、個人用の2曲プレイヤーです。
+* {
+  box-sizing: border-box;
+}
 
-曲は **STAY GOLD** と **GLORIA** の2曲に固定しています。音源（M4A）と同期歌詞（LRC）はWeb上へ公開せず、初回起動時にiPhoneの「ファイル」アプリから選びます。選んだデータはブラウザーの端末内保存領域（IndexedDB）へ保存されます。
+html,
+body {
+  min-height: 100%;
+  margin: 0;
+  overscroll-behavior: none;
+  background:
+    radial-gradient(circle at 50% -10%, rgba(233, 184, 74, 0.13), transparent 34rem),
+    var(--background);
+  color: var(--text);
+}
 
-## できること
+body {
+  min-height: 100dvh;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
 
-- 曲名だけの縦リールで選曲
-- STAY GOLD / GLORIA のM4A再生
-- 再生、一時停止、前曲、次曲
-- 再生位置の移動
-- LRC同期歌詞を常に3行表示
-- 現在行を中央へ固定し、中央行だけ太字
-- 行切替時の縦スライド／フェード
-- 曲切替時に再生位置と歌詞位置を先頭へ戻す
-- ホーム画面からアプリ風に起動
-- アプリ本体のオフライン起動
-- ロック画面の再生操作（対応するiOSで利用可能）
+button,
+input {
+  font: inherit;
+}
 
-## いちばん簡単な使い方
+button {
+  color: inherit;
+}
 
-詳しい画面操作は [はじめかた.md](./はじめかた.md) を参照してください。
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
 
-1. このフォルダーの中身だけを、GitHubの公開リポジトリへアップロードします。
-2. GitHub Pagesを有効にします。
-3. 発行されたURLをiPhoneのSafariで開きます。
-4. Safariの共有メニューから「ホーム画面に追加」を選びます。
-5. 初回起動時、2曲それぞれのM4AとLRCを選んで保存します。
+.app-shell {
+  width: min(100%, 34rem);
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding: calc(var(--safe-top) + 1rem) 1.25rem calc(var(--safe-bottom) + 1rem);
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+}
 
-> **重要:** M4AとLRCはGitHubへアップロードしないでください。本プロジェクトにも音源・歌詞データは含まれていません。
+.app-header,
+.setup-header,
+.lyrics-heading,
+footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
 
-## 必要な手元ファイル
+.app-header h1,
+.setup-header h2,
+.player-section h2 {
+  margin: 0;
+}
 
-- `01 STAY GOLD.m4a`
-- `STAY GOLD.lrc`
-- `04 GLORIA.m4a`
-- `gloria.lrc`
+.app-header h1 {
+  font-size: clamp(1.7rem, 8vw, 2.3rem);
+  line-height: 1;
+  letter-spacing: 0.025em;
+}
 
-ファイル名が多少異なっていても動作します。初回設定画面で正しい曲の枠に選んでください。
+.app-header h1 span {
+  color: var(--gold);
+}
 
-## ファイル構成
+.eyebrow,
+.section-label {
+  margin: 0 0 0.35rem;
+  color: var(--muted);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+}
 
-```text
-ziggy-player-pwa/
-├─ index.html              画面構造と初回設定画面
-├─ styles.css              iPhone向けレイアウトとアニメーション
-├─ app.js                  再生、選曲、端末内保存、歌詞同期
-├─ lrc-parser.js           LRC解析と現在行検索
-├─ manifest.webmanifest    ホーム画面アプリ設定
-├─ service-worker.js       アプリ本体のオフライン保存
-├─ icons/                  ホーム画面アイコン
-├─ tests/                  LRC解析テスト
-├─ package.json            開発時のテスト設定
-├─ .nojekyll               GitHub Pages向け設定
-├─ はじめかた.md            GitHub PagesとiPhoneの操作手順
-└─ README.md               この文書
-```
+.icon-button {
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.045);
+  font-size: 1.25rem;
+}
 
-## PCでの確認方法（開発者向け）
+.icon-button:active,
+.control-button:active,
+.save-button:active,
+.file-picker:active {
+  transform: scale(0.96);
+}
 
-このフォルダーでローカルHTTPサーバーを起動し、表示されたURLをブラウザーで開きます。
+.reel-section,
+.player-section,
+.lyrics-section {
+  border: 1px solid var(--line);
+  border-radius: 1.25rem;
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.015));
+  box-shadow: 0 1.2rem 3rem rgba(0, 0, 0, 0.22);
+}
 
-```sh
-python -m http.server 8000
-```
+.reel-section {
+  padding: 1rem 1rem 0.75rem;
+}
 
-構文チェックとLRC解析テスト:
+.song-reel {
+  position: relative;
+  height: 9.75rem;
+  overflow: hidden;
+  touch-action: pan-x;
+  outline: none;
+  cursor: ns-resize;
+}
 
-```sh
-npm run check
-npm test
-```
+.reel-lines {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-rows: repeat(3, 1fr);
+  align-items: center;
+  z-index: 2;
+}
 
-外部ライブラリやビルド作業は不要です。
+.reel-line {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  text-align: center;
+  white-space: nowrap;
+  transition: color 180ms ease, opacity 180ms ease, transform 180ms ease;
+}
 
-## 保存とプライバシー
+.reel-side {
+  color: var(--muted);
+  font-size: 0.9rem;
+  opacity: 0.48;
+  transform: scale(0.92);
+}
 
-- 音源と歌詞は外部サーバーへ送信しません。
-- GitHub Pagesに置かれるのは、プレイヤー本体だけです。
-- iPhoneでSafariのWebサイトデータを消去すると、登録した曲も消える場合があります。
-- 元のM4AとLRCは「ファイル」アプリやiCloud Driveへ残してください。
-- iPhoneの空き容量が極端に少ない場合、Webアプリの保存データが整理される可能性があります。その場合は4ファイルをもう一度登録します。
+.reel-current {
+  color: var(--text);
+  font-size: clamp(1.35rem, 7vw, 1.8rem);
+  font-weight: 800;
+  letter-spacing: 0.025em;
+  text-shadow: 0 0 1.2rem rgba(233, 184, 74, 0.22);
+}
 
-## 対応範囲
+.reel-selection {
+  position: absolute;
+  top: 33.333%;
+  right: 0.2rem;
+  bottom: 33.333%;
+  left: 0.2rem;
+  z-index: 1;
+  border-top: 1px solid rgba(233, 184, 74, 0.5);
+  border-bottom: 1px solid rgba(233, 184, 74, 0.5);
+  background: linear-gradient(90deg, transparent, rgba(233, 184, 74, 0.07), transparent);
+}
 
-主対象はiPhoneのSafariおよび「ホーム画面に追加」したWebアプリです。iOSの安全制限により、最初の再生はユーザーが再生ボタンを押す必要があります。
+.reel-selection::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 0;
+  height: 0;
+  border-top: 0.3rem solid transparent;
+  border-bottom: 0.3rem solid transparent;
+  border-left: 0.45rem solid var(--gold);
+  transform: translateY(-50%);
+}
 
-このプロトタイプは個人利用を前提としています。
+.reel-fade {
+  position: absolute;
+  right: 0;
+  left: 0;
+  height: 34%;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.reel-fade-top {
+  top: 0;
+  background: linear-gradient(var(--surface), transparent);
+}
+
+.reel-fade-bottom {
+  bottom: 0;
+  background: linear-gradient(transparent, var(--surface));
+}
+
+.reel-lines.move-up {
+  animation: reel-move-up 240ms cubic-bezier(0.22, 0.75, 0.25, 1);
+}
+
+.reel-lines.move-down {
+  animation: reel-move-down 240ms cubic-bezier(0.22, 0.75, 0.25, 1);
+}
+
+@keyframes reel-move-up {
+  from { transform: translateY(1.15rem); opacity: 0.68; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes reel-move-down {
+  from { transform: translateY(-1.15rem); opacity: 0.68; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.reel-hint {
+  margin: 0.2rem 0 0;
+  color: var(--muted);
+  font-size: 0.7rem;
+  text-align: center;
+}
+
+.player-section {
+  padding: 1rem 1.1rem 1.1rem;
+  text-align: center;
+}
+
+.player-section h2 {
+  min-height: 1.65rem;
+  font-size: 1.15rem;
+  letter-spacing: 0.045em;
+}
+
+.timeline {
+  display: grid;
+  grid-template-columns: 2.8rem 1fr 2.8rem;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.8rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.7rem;
+}
+
+#seekBar {
+  width: 100%;
+  height: 1.5rem;
+  margin: 0;
+  accent-color: var(--gold);
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.35rem;
+  margin-top: 0.6rem;
+}
+
+.control-button {
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  transition: transform 100ms ease, background 150ms ease;
+}
+
+.control-button.secondary {
+  width: 3.25rem;
+  height: 3.25rem;
+  background: var(--surface-soft);
+  font-size: 1.2rem;
+}
+
+.control-button.primary {
+  width: 4.2rem;
+  height: 4.2rem;
+  padding-left: 0.18rem;
+  background: var(--gold);
+  color: #17120a;
+  box-shadow: 0 0.8rem 2rem rgba(233, 184, 74, 0.2);
+  font-size: 1.45rem;
+}
+
+.control-button.primary.is-playing {
+  padding-left: 0;
+}
+
+.player-message {
+  min-height: 1rem;
+  margin: 0.55rem 0 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.player-message.error,
+.setup-message.error {
+  color: var(--danger);
+}
+
+.lyrics-section {
+  padding: 1rem;
+}
+
+.lyrics-heading span {
+  color: var(--gold);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.lyrics-window {
+  height: 9rem;
+  overflow: hidden;
+  border-radius: 0.9rem;
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.lyrics-stack {
+  height: 100%;
+  display: grid;
+  grid-template-rows: repeat(3, 1fr);
+}
+
+.lyrics-stack.slide-up {
+  animation: lyric-slide-up 260ms ease-out;
+}
+
+.lyrics-stack.slide-down {
+  animation: lyric-slide-down 260ms ease-out;
+}
+
+.lyrics-stack.fade {
+  animation: lyric-fade 220ms ease-out;
+}
+
+@keyframes lyric-slide-up {
+  from { transform: translateY(0.7rem); opacity: 0.35; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes lyric-slide-down {
+  from { transform: translateY(-0.7rem); opacity: 0.35; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes lyric-fade {
+  from { opacity: 0.25; }
+  to { opacity: 1; }
+}
+
+.lyric-line {
+  min-width: 0;
+  margin: 0;
+  padding: 0 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.lyric-side {
+  color: var(--muted);
+  font-size: 0.78rem;
+  opacity: 0.63;
+}
+
+.lyric-current {
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.lyric-line.is-long {
+  font-size: 0.78rem;
+  letter-spacing: -0.035em;
+}
+
+.lyric-line.is-very-long {
+  font-size: 0.66rem;
+  letter-spacing: -0.055em;
+}
+
+footer {
+  margin-top: auto;
+  padding: 0 0.2rem;
+  color: var(--muted);
+  font-size: 0.65rem;
+}
+
+.privacy-mark {
+  color: #80c9a4;
+}
+
+.setup-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(0.35rem);
+}
+
+.setup-overlay.is-open {
+  display: flex;
+}
+
+.setup-sheet {
+  width: min(100%, 34rem);
+  max-height: calc(100dvh - var(--safe-top) - 0.7rem);
+  overflow-y: auto;
+  padding: 0.65rem 1.25rem calc(var(--safe-bottom) + 1.25rem);
+  border: 1px solid var(--line);
+  border-bottom: 0;
+  border-radius: 1.5rem 1.5rem 0 0;
+  background: #121216;
+  box-shadow: 0 -2rem 5rem rgba(0, 0, 0, 0.45);
+  animation: sheet-in 260ms cubic-bezier(0.22, 0.75, 0.25, 1);
+}
+
+@keyframes sheet-in {
+  from { transform: translateY(2.5rem); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.setup-grabber {
+  width: 2.6rem;
+  height: 0.28rem;
+  margin: 0 auto 0.8rem;
+  border-radius: 999px;
+  background: #46464d;
+}
+
+.setup-header h2 {
+  font-size: 1.35rem;
+}
+
+.setup-intro {
+  margin: 1rem 0;
+  color: #c2c0c5;
+  font-size: 0.82rem;
+  line-height: 1.65;
+}
+
+.setup-songs {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.setup-song {
+  padding: 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.setup-song h3 {
+  margin: 0 0 0.65rem;
+  color: var(--gold-bright);
+  font-size: 0.95rem;
+}
+
+.file-pickers {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.55rem;
+}
+
+.file-picker {
+  min-width: 0;
+  padding: 0.68rem;
+  border-radius: 0.72rem;
+  background: var(--surface-soft);
+  cursor: pointer;
+  transition: transform 100ms ease;
+}
+
+.file-picker-label,
+.file-name {
+  display: block;
+}
+
+.file-picker-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.file-name {
+  margin-top: 0.28rem;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.64rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-name.stored {
+  color: #80c9a4;
+}
+
+.file-picker input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.setup-message {
+  min-height: 1.15rem;
+  margin: 0.8rem 0 0.4rem;
+  color: #80c9a4;
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+.save-button {
+  width: 100%;
+  min-height: 3.25rem;
+  border: 0;
+  border-radius: 0.85rem;
+  background: var(--gold);
+  color: #17120a;
+  font-weight: 800;
+  transition: transform 100ms ease;
+}
+
+.save-button:disabled {
+  opacity: 0.52;
+}
+
+.setup-note {
+  margin: 0.65rem 0 0;
+  color: var(--muted);
+  font-size: 0.65rem;
+  text-align: center;
+}
+
+@media (min-width: 42rem) and (min-height: 48rem) {
+  .app-shell {
+    justify-content: center;
+    padding-top: calc(var(--safe-top) + 2rem);
+    padding-bottom: calc(var(--safe-bottom) + 2rem);
+  }
+}
+
+@media (max-height: 43rem) {
+  .app-shell {
+    gap: 0.7rem;
+  }
+
+  .song-reel {
+    height: 7.8rem;
+  }
+
+  .lyrics-window {
+    height: 7.5rem;
+  }
+
+  .reel-section,
+  .player-section,
+  .lyrics-section {
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
