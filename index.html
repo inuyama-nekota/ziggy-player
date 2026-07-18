@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="ZIGGY PLAYER" />
-    <meta name="description" content="STAY GOLDとGLORIAを楽しむ、端末内保存型の個人用プレイヤー" />
+    <meta name="description" content="Three-song private player stored on this iPhone" />
     <link rel="apple-touch-icon" href="./apple-touch-icon.png?v=3" />
     <link rel="icon" href="./apple-touch-icon.png?v=3" type="image/png" />
     <style>
@@ -688,7 +688,7 @@ footer {
 
     </style>
     <title>ZIGGY PLAYER</title>
-    <!-- Standalone build v1.8: corrected GLORIA lyric -->
+    <!-- Standalone build v1.9: three-song iPhone player -->
   </head>
   <body>
     <main class="app-shell">
@@ -732,7 +732,9 @@ footer {
         </div>
 
         <div class="controls" aria-label="再生操作">
-          <button id="playButton" class="control-button primary" type="button" aria-label="再生"></button>
+          <button id="previousButton" class="control-button secondary" type="button" aria-label="Previous song">&#x23EE;</button>
+          <button id="playButton" class="control-button primary" type="button" aria-label="Play"></button>
+          <button id="nextButton" class="control-button secondary" type="button" aria-label="Next song">&#x23ED;</button>
         </div>
 
         <p id="playerMessage" class="player-message" role="status"></p>
@@ -779,7 +781,7 @@ footer {
 
         <p id="setupMessage" class="setup-message" role="status"></p>
         <button id="saveSetupButton" class="save-button" type="button">このiPhoneに保存</button>
-        <p class="setup-note">元の4ファイルは「ファイル」アプリにも残しておいてください。</p>
+        <p class="setup-note">元の6ファイルは「ファイル」アプリにも残しておいてください。</p>
       </section>
     </div>
 
@@ -892,6 +894,7 @@ function findLyricIndex(entries, timeMs) {
 const SONGS = [
   { id: "stay-gold", title: "STAY GOLD", artist: "ZIGGY" },
   { id: "gloria", title: "GLORIA", artist: "ZIGGY" },
+  { id: "im-gettin-blue", title: "I'M GETTIN' BLUE", artist: "ZIGGY" },
 ];
 
 const LYRIC_CORRECTIONS = {
@@ -1270,7 +1273,7 @@ async function refreshSetupStatus() {
   }
 
   state.allSongsReady = readyCount === SONGS.length;
-  $("storageStatus").textContent = state.allSongsReady ? "2曲を端末内に保存済み" : `${readyCount}/2曲を保存済み`;
+  $("storageStatus").textContent = state.allSongsReady ? "3曲を端末内に保存済み" : `${readyCount}/3曲を保存済み`;
   $("closeSetupButton").hidden = !state.allSongsReady;
   return state.allSongsReady;
 }
@@ -1337,7 +1340,7 @@ async function saveSetup() {
     state.pendingFiles.clear();
     const ready = await refreshSetupStatus();
     if (!ready) {
-      setSetupMessage("2曲それぞれの音源と歌詞を選んでください。", true);
+      setSetupMessage("3曲それぞれの音源と歌詞を選んでください。", true);
       return;
     }
 
@@ -1401,6 +1404,8 @@ function attachEvents() {
   $("closeSetupButton").addEventListener("click", closeSetup);
   $("saveSetupButton").addEventListener("click", saveSetup);
   playButton.addEventListener("click", togglePlayback);
+  $("previousButton").addEventListener("click", () => changeSong(-1));
+  $("nextButton").addEventListener("click", () => changeSong(1));
 
   seekBar.addEventListener("input", () => {
     if (Number.isFinite(audio.duration) && audio.duration > 0) {
