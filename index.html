@@ -358,30 +358,83 @@ footer {
   transition: transform 100ms ease, background 150ms ease;
 }
 
-.control-button.secondary {
-  width: 3.25rem;
-  height: 3.25rem;
-  background: var(--surface-soft);
-  font-size: 1.2rem;
+.control-button.primary {
+  position: relative;
+  isolation: isolate;
+  width: 5.1rem;
+  height: 5.1rem;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid #252529;
+  background:
+    linear-gradient(
+      145deg,
+      #fffef8 0%,
+      #9b9ca0 17%,
+      #f7f6f0 32%,
+      #5a5b60 53%,
+      #dededb 72%,
+      #707176 100%
+    );
+  color: #24180b;
+  box-shadow:
+    0 0.95rem 1.5rem rgba(0, 0, 0, 0.58),
+    0 0.22rem 0.42rem rgba(0, 0, 0, 0.68),
+    inset 0 0.16rem 0.16rem rgba(255, 255, 255, 0.92),
+    inset 0 -0.2rem 0.25rem rgba(0, 0, 0, 0.55);
+  transition: transform 110ms ease, box-shadow 110ms ease;
 }
 
-.control-button.primary {
-  width: 4.8rem;
-  height: 4.8rem;
-  padding: 0;
-  background: var(--gold);
-  color: #17120a;
-  box-shadow: 0 0.8rem 2rem rgba(233, 184, 74, 0.2);
+.control-button.primary::after {
+  content: "";
+  position: absolute;
+  inset: 0.58rem;
+  z-index: -1;
+  border: 1px solid #f5dca3;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 33% 24%, rgba(255, 255, 255, 0.72), transparent 31%),
+    repeating-radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.055) 0 1px, transparent 1px 3px),
+    linear-gradient(145deg, #f7d991 0%, #d2a24f 48%, #966827 100%);
+  box-shadow:
+    0 0 0 0.13rem #282017,
+    0 0 0 0.2rem rgba(255, 245, 220, 0.5),
+    inset 0 0.22rem 0.3rem rgba(255, 255, 255, 0.55),
+    inset 0 -0.32rem 0.42rem rgba(70, 38, 8, 0.42),
+    0 0.28rem 0.35rem rgba(0, 0, 0, 0.58);
+  transition: transform 110ms ease, box-shadow 110ms ease, filter 180ms ease;
 }
 
 .control-button.primary::before {
   content: "";
+  position: relative;
+  z-index: 2;
   width: 0;
   height: 0;
   border-top: 0.8rem solid transparent;
   border-bottom: 0.8rem solid transparent;
   border-left: 1.2rem solid currentColor;
+  filter: drop-shadow(0 0.09rem 0 rgba(255, 246, 220, 0.55)) drop-shadow(0 0.14rem 0.1rem rgba(0, 0, 0, 0.5));
   transform: translateX(0.12rem);
+}
+
+.control-button.primary:active {
+  transform: translateY(0.14rem) scale(0.985);
+  box-shadow:
+    0 0.45rem 0.7rem rgba(0, 0, 0, 0.55),
+    0 0.12rem 0.2rem rgba(0, 0, 0, 0.72),
+    inset 0 0.1rem 0.12rem rgba(255, 255, 255, 0.72),
+    inset 0 -0.12rem 0.2rem rgba(0, 0, 0, 0.5);
+}
+
+.control-button.primary:active::after {
+  transform: translateY(0.09rem);
+  box-shadow:
+    0 0 0 0.13rem #282017,
+    0 0 0 0.2rem rgba(255, 245, 220, 0.42),
+    inset 0 0.12rem 0.25rem rgba(75, 43, 12, 0.42),
+    inset 0 -0.12rem 0.24rem rgba(255, 255, 255, 0.25),
+    0 0.08rem 0.12rem rgba(0, 0, 0, 0.58);
 }
 
 .control-button.primary.is-playing::before {
@@ -390,6 +443,10 @@ footer {
   border: 0;
   background: linear-gradient(90deg, currentColor 0 0.42rem, transparent 0.42rem 0.83rem, currentColor 0.83rem 1.25rem);
   transform: none;
+}
+
+.control-button.primary.is-playing::after {
+  filter: brightness(1.06) saturate(1.08);
 }
 
 .player-message {
@@ -732,9 +789,7 @@ footer {
         </div>
 
         <div class="controls" aria-label="再生操作">
-          <button id="previousButton" class="control-button secondary" type="button" aria-label="Previous song">&#x23EE;</button>
           <button id="playButton" class="control-button primary" type="button" aria-label="Play"></button>
-          <button id="nextButton" class="control-button secondary" type="button" aria-label="Next song">&#x23ED;</button>
         </div>
 
         <p id="playerMessage" class="player-message" role="status"></p>
@@ -1197,14 +1252,14 @@ async function loadSong(index, { autoplay = false, direction = null } = {}) {
     audio.load();
     renderLyrics(-1, false);
     updateMediaSession(song);
-    setMessage(autoplay || wasPlaying ? "" : "再生ボタンを押してください");
+    setMessage("");
 
     if (autoplay || wasPlaying) {
       try {
         await audio.play();
         setMessage("");
       } catch {
-        setMessage("再生ボタンを押してください");
+        setMessage("");
       }
     }
   } catch (error) {
@@ -1404,8 +1459,6 @@ function attachEvents() {
   $("closeSetupButton").addEventListener("click", closeSetup);
   $("saveSetupButton").addEventListener("click", saveSetup);
   playButton.addEventListener("click", togglePlayback);
-  $("previousButton").addEventListener("click", () => changeSong(-1));
-  $("nextButton").addEventListener("click", () => changeSong(1));
 
   seekBar.addEventListener("input", () => {
     if (Number.isFinite(audio.duration) && audio.duration > 0) {
