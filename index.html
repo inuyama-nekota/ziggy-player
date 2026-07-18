@@ -688,7 +688,7 @@ footer {
 
     </style>
     <title>ZIGGY PLAYER</title>
-    <!-- Standalone build v1.7: gold chrome icon and bilingual song-title typography -->
+    <!-- Standalone build v1.8: corrected GLORIA lyric -->
   </head>
   <body>
     <main class="app-shell">
@@ -894,6 +894,12 @@ const SONGS = [
   { id: "gloria", title: "GLORIA", artist: "ZIGGY" },
 ];
 
+const LYRIC_CORRECTIONS = {
+  gloria: [
+    ["あてにならない明日をみれば", "あてにならない明日を占えば"],
+  ],
+};
+
 const DB_NAME = "ziggy-player-private-media";
 const DB_VERSION = 1;
 const STORE_NAME = "songs";
@@ -1024,6 +1030,14 @@ async function readStoredAudio(record) {
 
 function normalizeIndex(index) {
   return (index + SONGS.length) % SONGS.length;
+}
+
+function applyLyricCorrections(songId, lyricsText) {
+  let corrected = lyricsText;
+  for (const [before, after] of LYRIC_CORRECTIONS[songId] || []) {
+    corrected = corrected.replaceAll(before, after);
+  }
+  return corrected;
 }
 
 function applySongTitleStyle(element, title) {
@@ -1170,7 +1184,7 @@ async function loadSong(index, { autoplay = false, direction = null } = {}) {
       return;
     }
 
-    const parsed = parseLrc(record.lyricsText);
+    const parsed = parseLrc(applyLyricCorrections(song.id, record.lyricsText));
     state.lyrics = parsed.entries;
     revokeAudioUrl();
     const audioBlob = await readStoredAudio(record);
@@ -1313,7 +1327,10 @@ async function saveSetup() {
         updatedAt: new Date().toISOString(),
       };
 
-      if (record.lyricsText) parseLrc(record.lyricsText);
+      if (record.lyricsText) {
+        record.lyricsText = applyLyricCorrections(song.id, record.lyricsText);
+        parseLrc(record.lyricsText);
+      }
       if (audioFile || lyricsFile) await saveSongRecord(record);
     }
 
