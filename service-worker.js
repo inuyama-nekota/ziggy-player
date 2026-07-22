@@ -1,4 +1,4 @@
-const CACHE_NAME = "ziggy-player-shell-v9";
+const CACHE_NAME = "ziggy-player-shell-v10";
 const APP_SHELL = [
   "./",
   "./index.html",
