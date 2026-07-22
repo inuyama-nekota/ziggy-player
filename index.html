@@ -848,7 +848,7 @@ footer {
 
     </style>
     <title>ZIGGY PLAYER</title>
-    <!-- Standalone build v2.7: GLORIA one-second non-looping video -->
+    <!-- Standalone build v2.8: STAY GOLD half-second non-looping video -->
   </head>
   <body>
     <video id="backgroundVideo" class="background-video" muted playsinline preload="auto"></video>
@@ -916,7 +916,7 @@ footer {
 
       <footer>
         <span id="storageStatus">音源未設定</span>
-        <span class="build-version">APP v2.7</span>
+        <span class="build-version">APP v2.8</span>
         <span class="privacy-mark">端末内保存</span>
       </footer>
     </main>
@@ -1063,7 +1063,14 @@ function findLyricIndex(entries, timeMs) {
 }
 
 const SONGS = [
-  { id: "stay-gold", key: "staygold", title: "STAY GOLD", artist: "ZIGGY" },
+  {
+    id: "stay-gold",
+    key: "staygold",
+    title: "STAY GOLD",
+    artist: "ZIGGY",
+    videoDelaySeconds: 0.5,
+    videoLoop: false,
+  },
   {
     id: "gloria",
     key: "gloria",
