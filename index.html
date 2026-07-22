@@ -750,6 +750,18 @@ footer {
   pointer-events: none;
 }
 
+.clear-video-button {
+  width: 100%;
+  margin-top: 0.6rem;
+  padding: 0.58rem 0.7rem;
+  border: 1px solid rgba(255, 138, 128, 0.3);
+  border-radius: 0.7rem;
+  background: rgba(255, 138, 128, 0.06);
+  color: #ffaaa3;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
 .setup-message {
   min-height: 1.15rem;
   margin: 0.8rem 0 0.4rem;
@@ -822,7 +834,7 @@ footer {
 
     </style>
     <title>ZIGGY PLAYER</title>
-    <!-- Standalone build v2.0: folder library and synchronized video backgrounds -->
+    <!-- Standalone build v2.1: per-song background video removal -->
   </head>
   <body>
     <video id="backgroundVideo" class="background-video" muted playsinline loop preload="metadata"></video>
@@ -951,6 +963,7 @@ footer {
             <input type="file" accept="video/*,.mp4,.m4v,.mov" data-kind="video" />
           </label>
         </div>
+        <button class="clear-video-button" data-action="clear-video" type="button">この曲の背景動画を解除</button>
       </article>
     </template>
     <script>
@@ -1551,6 +1564,9 @@ function buildSetupRows() {
       input.dataset.songId = song.id;
       input.addEventListener("change", handleFileSelection);
     }
+    const clearVideoButton = fragment.querySelector('[data-action="clear-video"]');
+    clearVideoButton.dataset.songId = song.id;
+    clearVideoButton.addEventListener("click", handleClearVideo);
 
     container.appendChild(fragment);
   }
@@ -1592,6 +1608,41 @@ function handleFileSelection(event) {
   const article = input.closest(".setup-song");
   article.querySelector(`[data-file-name="${input.dataset.kind}"]`).textContent = file.name;
   setSetupMessage("");
+}
+
+async function handleClearVideo(event) {
+  const songId = event.currentTarget.dataset.songId;
+  const song = SONGS.find((item) => item.id === songId);
+  if (!song) return;
+  if (!window.confirm(`${song.title}の背景動画だけを解除しますか？\n音源と歌詞は残ります。`)) return;
+
+  event.currentTarget.disabled = true;
+  try {
+    state.pendingFiles.delete(`${songId}:video`);
+    const record = await getSongRecord(songId);
+    if (record) {
+      const chunkCount = record.videoChunkCount || 0;
+      for (let index = 0; index < chunkCount; index += 1) {
+        await deleteSongRecord(videoChunkId(songId, index));
+      }
+      delete record.videoBlob;
+      delete record.videoChunkCount;
+      delete record.videoType;
+      delete record.videoSize;
+      delete record.videoName;
+      record.updatedAt = new Date().toISOString();
+      await saveSongRecord(record);
+    }
+
+    if (SONGS[state.songIndex]?.id === songId) clearBackgroundVideo();
+    await refreshSetupStatus();
+    setSetupMessage(`${song.title}の背景動画を解除しました。音源と歌詞はそのままです。`);
+  } catch (error) {
+    console.error(error);
+    setSetupMessage("背景動画を解除できませんでした。もう一度お試しください。", true);
+  } finally {
+    event.currentTarget.disabled = false;
+  }
 }
 
 function handleLibrarySelection(event) {
