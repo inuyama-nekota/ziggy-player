@@ -63,7 +63,6 @@ body {
   z-index: 0;
   object-fit: cover;
   opacity: 0;
-  filter: saturate(0.88) contrast(1.08);
   transition: opacity 420ms ease;
 }
 
@@ -834,10 +833,10 @@ footer {
 
     </style>
     <title>ZIGGY PLAYER</title>
-    <!-- Standalone build v2.1: per-song background video removal -->
+    <!-- Standalone build v2.2: smooth background video playback -->
   </head>
   <body>
-    <video id="backgroundVideo" class="background-video" muted playsinline loop preload="metadata"></video>
+    <video id="backgroundVideo" class="background-video" muted playsinline loop preload="auto"></video>
     <div class="video-scrim" aria-hidden="true"></div>
     <main class="app-shell">
       <header class="app-header">
@@ -1793,7 +1792,6 @@ function attachEvents() {
   audio.addEventListener("timeupdate", () => {
     updateTimeline();
     updateLyricsForTime();
-    syncVideoToAudio();
   });
   audio.addEventListener("loadedmetadata", updateTimeline);
   audio.addEventListener("durationchange", updateTimeline);
