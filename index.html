@@ -7,7 +7,8 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="ZIGGY PLAYER" />
-    <meta name="description" content="Three-song private player stored on this iPhone" />
+    <meta name="description" content="ZIGGYの3曲を楽しむ、端末内保存型の個人用Webプレイヤー" />
+    <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="apple-touch-icon" href="./apple-touch-icon.png?v=3" />
     <link rel="icon" href="./apple-touch-icon.png?v=3" type="image/png" />
     <style>
@@ -49,6 +50,34 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+.background-video,
+.video-scrim {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.background-video {
+  z-index: 0;
+  object-fit: cover;
+  opacity: 0;
+  filter: saturate(0.88) contrast(1.08);
+  transition: opacity 420ms ease;
+}
+
+.background-video.is-visible {
+  opacity: 1;
+}
+
+.video-scrim {
+  z-index: 1;
+  background:
+    linear-gradient(180deg, rgba(4, 4, 7, 0.36), rgba(4, 4, 7, 0.58)),
+    radial-gradient(circle at 50% 35%, transparent 0 20%, rgba(0, 0, 0, 0.36) 76%);
+}
+
 button,
 input {
   font: inherit;
@@ -71,6 +100,8 @@ button {
 }
 
 .app-shell {
+  position: relative;
+  z-index: 2;
   width: min(100%, 34rem);
   min-height: 100dvh;
   margin: 0 auto;
@@ -609,6 +640,52 @@ footer {
   line-height: 1.65;
 }
 
+.library-import {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.7rem;
+  margin: 0 0 1rem;
+}
+
+.library-picker {
+  display: grid;
+  min-height: 4.4rem;
+  place-content: center;
+  padding: 0.8rem;
+  border: 1px solid rgba(233, 184, 74, 0.38);
+  border-radius: 0.9rem;
+  background: linear-gradient(145deg, rgba(233, 184, 74, 0.13), rgba(255, 255, 255, 0.025));
+  color: var(--gold-bright);
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.4;
+  text-align: center;
+  cursor: pointer;
+}
+
+.library-picker.secondary {
+  border-color: var(--line);
+  background: rgba(255, 255, 255, 0.035);
+  color: #d0ced3;
+}
+
+.library-picker input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.library-hint {
+  grid-column: 1 / -1;
+  margin: -0.2rem 0 0;
+  color: var(--muted);
+  font-size: 0.65rem;
+  line-height: 1.5;
+  text-align: center;
+}
+
 .setup-songs {
   display: grid;
   gap: 0.8rem;
@@ -629,7 +706,7 @@ footer {
 
 .file-pickers {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 0.55rem;
 }
 
@@ -745,9 +822,11 @@ footer {
 
     </style>
     <title>ZIGGY PLAYER</title>
-    <!-- Standalone build v1.9: three-song iPhone player -->
+    <!-- Standalone build v2.0: folder library and synchronized video backgrounds -->
   </head>
   <body>
+    <video id="backgroundVideo" class="background-video" muted playsinline loop preload="metadata"></video>
+    <div class="video-scrim" aria-hidden="true"></div>
     <main class="app-shell">
       <header class="app-header">
         <div>
@@ -823,20 +902,32 @@ footer {
         <div class="setup-header">
           <div>
             <p class="eyebrow">FIRST TIME SETUP</p>
-            <h2 id="setupTitle">音源と歌詞を登録</h2>
+            <h2 id="setupTitle">ZIGGYフォルダを登録</h2>
           </div>
           <button id="closeSetupButton" class="icon-button" type="button" aria-label="設定を閉じる">×</button>
         </div>
 
         <p class="setup-intro">
-          ファイルはこのiPhone内だけに保存します。GitHubへ音源や歌詞が送信されることはありません。
+          iCloud Driveの「ZIGGY」フォルダを選ぶと、M4A・LRC・MP4をファイル名から自動で組み合わせます。素材はこのiPhone内だけに保存され、GitHubへ送信されません。
         </p>
+
+        <div class="library-import">
+          <label class="library-picker">
+            ZIGGYフォルダを選択
+            <input id="folderPicker" type="file" webkitdirectory directory multiple />
+          </label>
+          <label class="library-picker secondary">
+            ファイルをまとめて選択
+            <input id="multiFilePicker" type="file" accept="audio/*,video/*,.m4a,.mp3,.aac,.wav,.flac,.lrc,.mp4,.m4v,.mov" multiple />
+          </label>
+          <p class="library-hint">フォルダ選択が表示されないiPhoneでは、右側からZIGGYフォルダ内のファイルをまとめて選んでください。</p>
+        </div>
 
         <div id="setupSongs" class="setup-songs"></div>
 
         <p id="setupMessage" class="setup-message" role="status"></p>
         <button id="saveSetupButton" class="save-button" type="button">このiPhoneに保存</button>
-        <p class="setup-note">元の6ファイルは「ファイル」アプリにも残しておいてください。</p>
+        <p class="setup-note">元の9ファイルは「ファイル」アプリにも残しておいてください。</p>
       </section>
     </div>
 
@@ -852,20 +943,17 @@ footer {
           <label class="file-picker">
             <span class="file-picker-label">歌詞を選ぶ</span>
             <span class="file-name" data-file-name="lyrics">未選択</span>
-            <input type="file" data-kind="lyrics" />
+            <input type="file" accept="text/plain,.lrc" data-kind="lyrics" />
+          </label>
+          <label class="file-picker">
+            <span class="file-picker-label">動画を選ぶ</span>
+            <span class="file-name" data-file-name="video">未選択</span>
+            <input type="file" accept="video/*,.mp4,.m4v,.mov" data-kind="video" />
           </label>
         </div>
       </article>
     </template>
     <script>
-
-// Repair build: remove stale cached versions without touching saved songs.
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.getRegistrations().then((items) => items.forEach((item) => item.unregister()));
-}
-if ("caches" in window) {
-  caches.keys().then((keys) => Promise.all(keys.map((key) => caches.delete(key))));
-}
 
 const TIME_TAG = /\[(\d{1,3}):(\d{2})(?:[.:](\d{1,3}))?\]/g;
 const METADATA_TAG = /^\s*\[([a-zA-Z]+):(.*)\]\s*$/;
@@ -947,9 +1035,9 @@ function findLyricIndex(entries, timeMs) {
 }
 
 const SONGS = [
-  { id: "stay-gold", title: "STAY GOLD", artist: "ZIGGY" },
-  { id: "gloria", title: "GLORIA", artist: "ZIGGY" },
-  { id: "im-gettin-blue", title: "I'M GETTIN' BLUE", artist: "ZIGGY" },
+  { id: "stay-gold", key: "staygold", title: "STAY GOLD", artist: "ZIGGY" },
+  { id: "gloria", key: "gloria", title: "GLORIA", artist: "ZIGGY" },
+  { id: "im-gettin-blue", key: "imgettinblue", title: "I'M GETTIN' BLUE", artist: "ZIGGY" },
 ];
 
 const LYRIC_CORRECTIONS = {
@@ -962,9 +1050,13 @@ const DB_NAME = "ziggy-player-private-media";
 const DB_VERSION = 1;
 const STORE_NAME = "songs";
 const AUDIO_CHUNK_SIZE = 1024 * 1024;
+const VIDEO_CHUNK_SIZE = 1024 * 1024;
+const AUDIO_EXTENSIONS = new Set(["m4a", "mp3", "aac", "wav", "flac"]);
+const VIDEO_EXTENSIONS = new Set(["mp4", "m4v", "mov"]);
 
 const $ = (id) => document.getElementById(id);
 const audio = $("audioPlayer");
+const video = $("backgroundVideo");
 const reel = $("songReel");
 const reelLines = $("reelLines");
 const playButton = $("playButton");
@@ -976,6 +1068,7 @@ const state = {
   lyricIndex: -1,
   lyrics: [],
   objectUrl: null,
+  videoUrl: null,
   pendingFiles: new Map(),
   loadToken: 0,
   allSongsReady: false,
@@ -1084,6 +1177,102 @@ async function readStoredAudio(record) {
     parts.push(chunk.bytes);
   }
   return new Blob(parts, { type: record.audioType || "audio/mp4" });
+}
+
+function videoChunkId(songId, index) {
+  return `${songId}:video:${index}`;
+}
+
+function hasStoredVideo(record) {
+  return Boolean(record?.videoBlob || record?.videoChunkCount > 0);
+}
+
+async function storeVideoInChunks(songId, file, oldChunkCount = 0) {
+  const chunkCount = Math.ceil(file.size / VIDEO_CHUNK_SIZE);
+  for (let index = 0; index < chunkCount; index += 1) {
+    const start = index * VIDEO_CHUNK_SIZE;
+    const end = Math.min(start + VIDEO_CHUNK_SIZE, file.size);
+    const bytes = await file.slice(start, end).arrayBuffer();
+    await saveSongRecord({ id: videoChunkId(songId, index), bytes });
+  }
+  for (let index = chunkCount; index < oldChunkCount; index += 1) {
+    await deleteSongRecord(videoChunkId(songId, index));
+  }
+  return {
+    videoChunkCount: chunkCount,
+    videoType: file.type || "video/mp4",
+    videoSize: file.size,
+  };
+}
+
+async function readStoredVideo(record) {
+  if (record.videoBlob) return record.videoBlob;
+  const parts = [];
+  for (let index = 0; index < record.videoChunkCount; index += 1) {
+    const chunk = await getSongRecord(videoChunkId(record.id, index));
+    if (!chunk?.bytes) throw new Error("動画の保存が途中です。ZIGGYフォルダをもう一度選んでください。");
+    parts.push(chunk.bytes);
+  }
+  return new Blob(parts, { type: record.videoType || "video/mp4" });
+}
+
+function fileExtension(name) {
+  const match = String(name).toLowerCase().match(/\.([a-z0-9]+)$/);
+  return match?.[1] || "";
+}
+
+function normalizeMediaName(name) {
+  return String(name)
+    .replace(/\.[^.]+$/, "")
+    .normalize("NFKD")
+    .replace(/^\s*\d+\s*/, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9\u3040-\u30ff\u3400-\u9fff]+/gu, "");
+}
+
+function mediaKind(file) {
+  const extension = fileExtension(file.name);
+  if (AUDIO_EXTENSIONS.has(extension)) return "audio";
+  if (extension === "lrc") return "lyrics";
+  if (VIDEO_EXTENSIONS.has(extension)) return "video";
+  return null;
+}
+
+function songForFile(file) {
+  const stem = normalizeMediaName(file.name);
+  return SONGS.find((song) => stem === song.key || stem.includes(song.key) || song.key.includes(stem));
+}
+
+function stageLibraryFiles(fileList) {
+  let matched = 0;
+  const stagedKeys = new Set();
+
+  for (const file of fileList) {
+    const kind = mediaKind(file);
+    const song = kind ? songForFile(file) : null;
+    if (!kind || !song) continue;
+    const key = `${song.id}:${kind}`;
+    state.pendingFiles.set(key, file);
+    stagedKeys.add(key);
+    matched += 1;
+
+    const article = document.querySelector(`[data-song-id="${song.id}"]`);
+    const fileName = article?.querySelector(`[data-file-name="${kind}"]`);
+    if (fileName) {
+      fileName.textContent = file.name;
+      fileName.classList.add("stored");
+    }
+  }
+
+  const completeSongs = SONGS.filter((song) =>
+    ["audio", "lyrics", "video"].every((kind) => stagedKeys.has(`${song.id}:${kind}`)),
+  ).length;
+  setSetupMessage(
+    matched > 0
+      ? `${matched}ファイルを自動照合しました（3点揃った曲: ${completeSongs}/3）`
+      : "対応するM4A・LRC・MP4が見つかりませんでした。ファイル名を確認してください。",
+    matched === 0,
+  );
 }
 
 function normalizeIndex(index) {
@@ -1201,6 +1390,44 @@ function revokeAudioUrl() {
   }
 }
 
+function revokeVideoUrl() {
+  if (state.videoUrl) {
+    URL.revokeObjectURL(state.videoUrl);
+    state.videoUrl = null;
+  }
+}
+
+function clearBackgroundVideo() {
+  video.pause();
+  video.classList.remove("is-visible");
+  video.removeAttribute("src");
+  video.load();
+  revokeVideoUrl();
+}
+
+function syncVideoToAudio(force = false) {
+  if (!video.src || video.readyState < 1) return;
+  const duration = Number.isFinite(video.duration) && video.duration > 0 ? video.duration : 0;
+  const target = duration > 0 ? audio.currentTime % duration : audio.currentTime;
+  if (force || Math.abs(video.currentTime - target) > 0.35) {
+    try {
+      video.currentTime = target;
+    } catch {
+      // Safari can briefly reject seeking while metadata is still settling.
+    }
+  }
+}
+
+async function playBackgroundVideo() {
+  if (!video.src) return;
+  syncVideoToAudio(true);
+  try {
+    await video.play();
+  } catch (error) {
+    console.warn("Background video could not start.", error);
+  }
+}
+
 function updateMediaSession(song) {
   if (!("mediaSession" in navigator) || !("MediaMetadata" in window)) return;
   navigator.mediaSession.metadata = new MediaMetadata({
@@ -1222,6 +1449,8 @@ async function loadSong(index, { autoplay = false, direction = null } = {}) {
 
   audio.pause();
   audio.currentTime = 0;
+  video.pause();
+  clearBackgroundVideo();
   state.songIndex = normalizedIndex;
   state.lyricIndex = -1;
   state.lyrics = [];
@@ -1235,6 +1464,7 @@ async function loadSong(index, { autoplay = false, direction = null } = {}) {
     if (token !== state.loadToken) return;
     if (!hasStoredAudio(record) || !record?.lyricsText) {
       revokeAudioUrl();
+      clearBackgroundVideo();
       audio.removeAttribute("src");
       audio.load();
       setMessage("音源と歌詞を登録してください", true);
@@ -1250,6 +1480,19 @@ async function loadSong(index, { autoplay = false, direction = null } = {}) {
     state.objectUrl = URL.createObjectURL(audioBlob);
     audio.src = state.objectUrl;
     audio.load();
+
+    if (hasStoredVideo(record)) {
+      const videoBlob = await readStoredVideo(record);
+      if (token !== state.loadToken) return;
+      state.videoUrl = URL.createObjectURL(videoBlob);
+      video.src = state.videoUrl;
+      video.muted = true;
+      video.playsInline = true;
+      video.load();
+      video.classList.add("is-visible");
+    } else {
+      clearBackgroundVideo();
+    }
     renderLyrics(-1, false);
     updateMediaSession(song);
     setMessage("");
@@ -1315,20 +1558,27 @@ function buildSetupRows() {
 
 async function refreshSetupStatus() {
   let readyCount = 0;
+  let videoCount = 0;
   for (const song of SONGS) {
     const article = document.querySelector(`[data-song-id="${song.id}"]`);
     const record = await getSongRecord(song.id);
     const audioName = article.querySelector('[data-file-name="audio"]');
     const lyricsName = article.querySelector('[data-file-name="lyrics"]');
+    const videoName = article.querySelector('[data-file-name="video"]');
     audioName.textContent = record?.audioName || "未選択";
     lyricsName.textContent = record?.lyricsName || "未選択";
+    videoName.textContent = record?.videoName || "未選択";
     audioName.classList.toggle("stored", hasStoredAudio(record));
     lyricsName.classList.toggle("stored", Boolean(record?.lyricsText));
+    videoName.classList.toggle("stored", hasStoredVideo(record));
     if (hasStoredAudio(record) && record?.lyricsText) readyCount += 1;
+    if (hasStoredVideo(record)) videoCount += 1;
   }
 
   state.allSongsReady = readyCount === SONGS.length;
-  $("storageStatus").textContent = state.allSongsReady ? "3曲を端末内に保存済み" : `${readyCount}/3曲を保存済み`;
+  $("storageStatus").textContent = state.allSongsReady
+    ? `3曲保存済み・動画 ${videoCount}/3`
+    : `${readyCount}/3曲を保存済み`;
   $("closeSetupButton").hidden = !state.allSongsReady;
   return state.allSongsReady;
 }
@@ -1342,6 +1592,13 @@ function handleFileSelection(event) {
   const article = input.closest(".setup-song");
   article.querySelector(`[data-file-name="${input.dataset.kind}"]`).textContent = file.name;
   setSetupMessage("");
+}
+
+function handleLibrarySelection(event) {
+  const files = [...(event.currentTarget.files || [])];
+  if (files.length === 0) return;
+  stageLibraryFiles(files);
+  event.currentTarget.value = "";
 }
 
 async function decodeLyricsFile(file) {
@@ -1367,6 +1624,7 @@ async function saveSetup() {
       const existing = (await getSongRecord(song.id)) || { id: song.id };
       const audioFile = state.pendingFiles.get(`${song.id}:audio`);
       const lyricsFile = state.pendingFiles.get(`${song.id}:lyrics`);
+      const videoFile = state.pendingFiles.get(`${song.id}:video`);
       const audioStorage = audioFile
         ? await storeAudioInChunks(song.id, audioFile, existing.audioChunkCount || 0)
         : {
@@ -1374,12 +1632,22 @@ async function saveSetup() {
             audioType: existing.audioType,
             audioSize: existing.audioSize,
           };
+      const videoStorage = videoFile
+        ? await storeVideoInChunks(song.id, videoFile, existing.videoChunkCount || 0)
+        : {
+            videoChunkCount: existing.videoChunkCount,
+            videoType: existing.videoType,
+            videoSize: existing.videoSize,
+          };
       const record = {
         ...existing,
         id: song.id,
         audioBlob: audioFile ? undefined : existing.audioBlob,
         ...audioStorage,
         audioName: audioFile?.name || existing.audioName,
+        videoBlob: videoFile ? undefined : existing.videoBlob,
+        ...videoStorage,
+        videoName: videoFile?.name || existing.videoName,
         lyricsText: lyricsFile ? await decodeLyricsFile(lyricsFile) : existing.lyricsText,
         lyricsName: lyricsFile?.name || existing.lyricsName,
         updatedAt: new Date().toISOString(),
@@ -1389,7 +1657,7 @@ async function saveSetup() {
         record.lyricsText = applyLyricCorrections(song.id, record.lyricsText);
         parseLrc(record.lyricsText);
       }
-      if (audioFile || lyricsFile) await saveSongRecord(record);
+      if (audioFile || lyricsFile || videoFile) await saveSongRecord(record);
     }
 
     state.pendingFiles.clear();
@@ -1458,6 +1726,8 @@ function attachEvents() {
   $("openSetupButton").addEventListener("click", openSetup);
   $("closeSetupButton").addEventListener("click", closeSetup);
   $("saveSetupButton").addEventListener("click", saveSetup);
+  $("folderPicker").addEventListener("change", handleLibrarySelection);
+  $("multiFilePicker").addEventListener("change", handleLibrarySelection);
   playButton.addEventListener("click", togglePlayback);
 
   seekBar.addEventListener("input", () => {
@@ -1465,21 +1735,31 @@ function attachEvents() {
       audio.currentTime = (Number(seekBar.value) / 1000) * audio.duration;
       updateTimeline();
       updateLyricsForTime();
+      syncVideoToAudio(true);
     }
   });
 
   audio.addEventListener("timeupdate", () => {
     updateTimeline();
     updateLyricsForTime();
+    syncVideoToAudio();
   });
   audio.addEventListener("loadedmetadata", updateTimeline);
   audio.addEventListener("durationchange", updateTimeline);
-  audio.addEventListener("play", updatePlayButton);
-  audio.addEventListener("pause", updatePlayButton);
+  audio.addEventListener("seeked", () => syncVideoToAudio(true));
+  audio.addEventListener("play", () => {
+    updatePlayButton();
+    playBackgroundVideo();
+  });
+  audio.addEventListener("pause", () => {
+    updatePlayButton();
+    video.pause();
+  });
   audio.addEventListener("ended", () => changeSong(1, { autoplay: true }));
   audio.addEventListener("error", () => {
     if (audio.src) setMessage("この音源を再生できませんでした。設定から選び直してください。", true);
   });
+  video.addEventListener("loadedmetadata", () => syncVideoToAudio(true));
 
   reel.addEventListener("wheel", (event) => {
     event.preventDefault();
@@ -1569,7 +1849,10 @@ function attachEvents() {
     if (event.target === setupSheet) closeSetup();
   });
 
-  window.addEventListener("beforeunload", revokeAudioUrl);
+  window.addEventListener("beforeunload", () => {
+    revokeAudioUrl();
+    revokeVideoUrl();
+  });
 }
 
 async function registerServiceWorker() {
@@ -1604,6 +1887,7 @@ async function initialize() {
 }
 
 initialize();
+registerServiceWorker();
 
     </script>
   </body>
