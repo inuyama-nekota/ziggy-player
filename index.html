@@ -63,7 +63,7 @@ body {
   z-index: 0;
   object-fit: cover;
   opacity: 0;
-  transition: opacity 420ms ease;
+  transition: opacity 700ms ease;
 }
 
 .background-video.is-visible {
@@ -833,7 +833,7 @@ footer {
 
     </style>
     <title>ZIGGY PLAYER</title>
-    <!-- Standalone build v2.2: smooth background video playback -->
+    <!-- Standalone build v2.3: delayed non-looping I'M GETTIN' BLUE video -->
   </head>
   <body>
     <video id="backgroundVideo" class="background-video" muted playsinline loop preload="auto"></video>
@@ -1049,7 +1049,14 @@ function findLyricIndex(entries, timeMs) {
 const SONGS = [
   { id: "stay-gold", key: "staygold", title: "STAY GOLD", artist: "ZIGGY" },
   { id: "gloria", key: "gloria", title: "GLORIA", artist: "ZIGGY" },
-  { id: "im-gettin-blue", key: "imgettinblue", title: "I'M GETTIN' BLUE", artist: "ZIGGY" },
+  {
+    id: "im-gettin-blue",
+    key: "imgettinblue",
+    title: "I'M GETTIN' BLUE",
+    artist: "ZIGGY",
+    videoDelaySeconds: 2,
+    videoLoop: false,
+  },
 ];
 
 const LYRIC_CORRECTIONS = {
@@ -1081,6 +1088,7 @@ const state = {
   lyrics: [],
   objectUrl: null,
   videoUrl: null,
+  videoStartTimer: null,
   pendingFiles: new Map(),
   loadToken: 0,
   allSongsReady: false,
@@ -1409,7 +1417,23 @@ function revokeVideoUrl() {
   }
 }
 
+function clearVideoStartTimer() {
+  if (state.videoStartTimer !== null) {
+    window.clearTimeout(state.videoStartTimer);
+    state.videoStartTimer = null;
+  }
+}
+
+function currentVideoOptions() {
+  const song = SONGS[state.songIndex] || {};
+  return {
+    delaySeconds: Number(song.videoDelaySeconds) || 0,
+    loop: song.videoLoop !== false,
+  };
+}
+
 function clearBackgroundVideo() {
+  clearVideoStartTimer();
   video.pause();
   video.classList.remove("is-visible");
   video.removeAttribute("src");
@@ -1418,9 +1442,26 @@ function clearBackgroundVideo() {
 }
 
 function syncVideoToAudio(force = false) {
-  if (!video.src || video.readyState < 1) return;
+  if (!video.src || video.readyState < 1) return false;
+  const options = currentVideoOptions();
   const duration = Number.isFinite(video.duration) && video.duration > 0 ? video.duration : 0;
-  const target = duration > 0 ? audio.currentTime % duration : audio.currentTime;
+  const elapsed = audio.currentTime - options.delaySeconds;
+
+  if (elapsed < 0) {
+    video.pause();
+    video.classList.remove("is-visible");
+    try { video.currentTime = 0; } catch {}
+    return false;
+  }
+
+  if (!options.loop && duration > 0 && elapsed >= duration) {
+    video.pause();
+    video.classList.remove("is-visible");
+    try { video.currentTime = Math.max(0, duration - 0.01); } catch {}
+    return false;
+  }
+
+  const target = options.loop && duration > 0 ? elapsed % duration : elapsed;
   if (force || Math.abs(video.currentTime - target) > 0.35) {
     try {
       video.currentTime = target;
@@ -1428,13 +1469,29 @@ function syncVideoToAudio(force = false) {
       // Safari can briefly reject seeking while metadata is still settling.
     }
   }
+  return true;
 }
 
 async function playBackgroundVideo() {
   if (!video.src) return;
-  syncVideoToAudio(true);
+  clearVideoStartTimer();
+  const options = currentVideoOptions();
+  const remainingDelay = options.delaySeconds - audio.currentTime;
+  if (remainingDelay > 0) {
+    video.pause();
+    video.classList.remove("is-visible");
+    try { video.currentTime = 0; } catch {}
+    state.videoStartTimer = window.setTimeout(() => {
+      state.videoStartTimer = null;
+      if (!audio.paused) playBackgroundVideo();
+    }, remainingDelay * 1000);
+    return;
+  }
+
+  if (!syncVideoToAudio(true)) return;
   try {
     await video.play();
+    if (!audio.paused) video.classList.add("is-visible");
   } catch (error) {
     console.warn("Background video could not start.", error);
   }
@@ -1500,8 +1557,9 @@ async function loadSong(index, { autoplay = false, direction = null } = {}) {
       video.src = state.videoUrl;
       video.muted = true;
       video.playsInline = true;
+      video.loop = song.videoLoop !== false;
       video.load();
-      video.classList.add("is-visible");
+      video.classList.toggle("is-visible", (song.videoDelaySeconds || 0) <= 0);
     } else {
       clearBackgroundVideo();
     }
@@ -1785,7 +1843,11 @@ function attachEvents() {
       audio.currentTime = (Number(seekBar.value) / 1000) * audio.duration;
       updateTimeline();
       updateLyricsForTime();
-      syncVideoToAudio(true);
+      if (audio.paused) {
+        if (syncVideoToAudio(true)) video.classList.add("is-visible");
+      } else {
+        playBackgroundVideo();
+      }
     }
   });
 
@@ -1795,20 +1857,32 @@ function attachEvents() {
   });
   audio.addEventListener("loadedmetadata", updateTimeline);
   audio.addEventListener("durationchange", updateTimeline);
-  audio.addEventListener("seeked", () => syncVideoToAudio(true));
+  audio.addEventListener("seeked", () => {
+    if (audio.paused) {
+      if (syncVideoToAudio(true)) video.classList.add("is-visible");
+    } else {
+      playBackgroundVideo();
+    }
+  });
   audio.addEventListener("play", () => {
     updatePlayButton();
     playBackgroundVideo();
   });
   audio.addEventListener("pause", () => {
     updatePlayButton();
+    clearVideoStartTimer();
     video.pause();
   });
   audio.addEventListener("ended", () => changeSong(1, { autoplay: true }));
   audio.addEventListener("error", () => {
     if (audio.src) setMessage("この音源を再生できませんでした。設定から選び直してください。", true);
   });
-  video.addEventListener("loadedmetadata", () => syncVideoToAudio(true));
+  video.addEventListener("loadedmetadata", () => {
+    if (syncVideoToAudio(true) && audio.paused) video.classList.add("is-visible");
+  });
+  video.addEventListener("ended", () => {
+    if (!video.loop) video.classList.remove("is-visible");
+  });
 
   reel.addEventListener("wheel", (event) => {
     event.preventDefault();
