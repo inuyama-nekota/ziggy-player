@@ -415,6 +415,21 @@ footer {
   transition: transform 110ms ease, box-shadow 110ms ease;
 }
 
+.build-version {
+  position: fixed;
+  z-index: 3;
+  left: 50%;
+  bottom: calc(var(--safe-bottom) + 0.3rem);
+  padding: 0.18rem 0.45rem;
+  border-radius: 999px;
+  background: rgba(8, 8, 10, 0.76);
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 0.6rem;
+  letter-spacing: 0.06em;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
 .control-button.primary::after {
   content: "";
   position: absolute;
@@ -833,7 +848,7 @@ footer {
 
     </style>
     <title>ZIGGY PLAYER</title>
-    <!-- Standalone build v2.5: one-second I'M GETTIN' BLUE video delay -->
+    <!-- Standalone build v2.6: precise one-second video timer and visible version -->
   </head>
   <body>
     <video id="backgroundVideo" class="background-video" muted playsinline preload="auto"></video>
@@ -901,7 +916,7 @@ footer {
 
       <footer>
         <span id="storageStatus">音源未設定</span>
-        <span class="build-version">v2.5</span>
+        <span class="build-version">APP v2.6</span>
         <span class="privacy-mark">端末内保存</span>
       </footer>
     </main>
@@ -1091,6 +1106,7 @@ const state = {
   videoUrl: null,
   videoStarted: false,
   videoFinished: false,
+  videoStartTimer: null,
   pendingFiles: new Map(),
   loadToken: 0,
   allSongsReady: false,
@@ -1419,6 +1435,13 @@ function revokeVideoUrl() {
   }
 }
 
+function clearVideoStartTimer() {
+  if (state.videoStartTimer !== null) {
+    window.clearTimeout(state.videoStartTimer);
+    state.videoStartTimer = null;
+  }
+}
+
 function currentVideoOptions() {
   const song = SONGS[state.songIndex] || {};
   return {
@@ -1428,6 +1451,7 @@ function currentVideoOptions() {
 }
 
 function clearBackgroundVideo() {
+  clearVideoStartTimer();
   state.videoStarted = false;
   state.videoFinished = false;
   video.pause();
@@ -1483,9 +1507,16 @@ async function playBackgroundVideo() {
     video.pause();
     video.classList.remove("is-visible");
     try { video.currentTime = 0; } catch {}
+    if (state.videoStartTimer === null) {
+      state.videoStartTimer = window.setTimeout(() => {
+        state.videoStartTimer = null;
+        if (!audio.paused) playBackgroundVideo();
+      }, remainingDelay * 1000);
+    }
     return;
   }
 
+  clearVideoStartTimer();
   if (!syncVideoToAudio(true)) return;
   if (state.videoStarted && !video.paused) return;
   video.removeAttribute("loop");
@@ -1844,6 +1875,7 @@ function attachEvents() {
 
   seekBar.addEventListener("input", () => {
     if (Number.isFinite(audio.duration) && audio.duration > 0) {
+      clearVideoStartTimer();
       audio.currentTime = (Number(seekBar.value) / 1000) * audio.duration;
       updateTimeline();
       updateLyricsForTime();
@@ -1872,6 +1904,7 @@ function attachEvents() {
   audio.addEventListener("loadedmetadata", updateTimeline);
   audio.addEventListener("durationchange", updateTimeline);
   audio.addEventListener("seeked", () => {
+    clearVideoStartTimer();
     if (audio.paused) {
       if (syncVideoToAudio(true)) video.classList.add("is-visible");
     } else {
@@ -1880,10 +1913,12 @@ function attachEvents() {
   });
   audio.addEventListener("play", () => {
     updatePlayButton();
+    clearVideoStartTimer();
     playBackgroundVideo();
   });
   audio.addEventListener("pause", () => {
     updatePlayButton();
+    clearVideoStartTimer();
     state.videoStarted = false;
     video.pause();
   });
