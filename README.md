@@ -1,13 +1,13 @@
 # ZIGGY PLAYER（Web版）
 
-iPhoneのSafariで使う、個人用の3曲プレイヤーです。音源・歌詞・動画はGitHubへ送らず、端末内にだけ保存します。
+iPhoneのSafariで使う、個人用の4曲プレイヤーです。音源・歌詞・動画はGitHubへ送らず、端末内にだけ保存します。
 
 ## iPhoneでの使い方
 
 1. Safariで公開ページを開く。
 2. 歯車ボタンを押し、「ZIGGYフォルダを選ぶ」を押す。
 3. iCloud Drive内の「ZIGGY」フォルダを選ぶ。
-4. 自動照合されたファイルを確認し、「3曲をこのiPhoneに保存」を押す。
+4. 自動照合されたファイルを確認し、「このiPhoneに保存」を押す。
 
 フォルダ選択が表示されない古いiOSでは、「ファイルをまとめて選ぶ」からM4A・LRC・MP4をまとめて選択します。
 
@@ -24,13 +24,16 @@ iCloud Drive/ZIGGY/
   01 I'M GETTIN' BLUE.m4a
   im_gettin_blue.lrc
   I'M GETTIN' BLUE.mp4
+  12 La Vie en Rose.m4a
+  la_vie_en_rose.lrc
+  LA VIE EN ROSE.mp4
 ```
 
 先頭の曲番号、空白、ハイフン、アンダースコア、大文字・小文字の違いは無視して照合します。
 
 ## 主な機能
 
-- 曲名だけの縦リール（STAY GOLD / GLORIA / I'M GETTIN' BLUE）
+- 曲名だけの縦リール（STAY GOLD / GLORIA / I'M GETTIN' BLUE / LA VIE EN ROSE）
 - メタリックな再生・一時停止ボタン
 - LRC同期歌詞を常時3行表示し、現在行を中央太字
 - MP4を背景全面で表示し、音源の再生・停止・シークへ同期
@@ -38,6 +41,7 @@ iCloud Drive/ZIGGY/
 - I'M GETTIN' BLUEは音楽の再生時刻が1.5秒を超えてからフェードインし、動画終了後はループせず黒へフェードアウト
 - GLORIAも音楽の1秒後に動画を開始し、動画終了後はループせず黒へフェードアウト
 - STAY GOLDは音楽の0.5秒後に動画を開始し、動画終了後はループせず黒へフェードアウト
+- LA VIE EN ROSEは音楽と同時に動画を開始し、動画終了後はループせず黒へフェードアウト
 - 画面最下部に現在のアプリバージョンを常時表示
 - 曲ごとに背景動画だけを解除（音源と歌詞は保持）
 - M4A・LRC・MP4をファイル名から自動照合

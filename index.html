@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="ZIGGY PLAYER" />
-    <meta name="description" content="ZIGGYの3曲を楽しむ、端末内保存型の個人用Webプレイヤー" />
+    <meta name="description" content="ZIGGYの4曲を楽しむ、端末内保存型の個人用Webプレイヤー" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="apple-touch-icon" href="./apple-touch-icon.png?v=3" />
     <link rel="icon" href="./apple-touch-icon.png?v=3" type="image/png" />
@@ -848,7 +848,7 @@ footer {
 
     </style>
     <title>ZIGGY PLAYER</title>
-    <!-- Standalone build v2.9: I'M GETTIN' BLUE one-and-a-half-second video delay -->
+    <!-- Standalone build v3.0: LA VIE EN ROSE added -->
   </head>
   <body>
     <video id="backgroundVideo" class="background-video" muted playsinline preload="auto"></video>
@@ -916,7 +916,7 @@ footer {
 
       <footer>
         <span id="storageStatus">音源未設定</span>
-        <span class="build-version">APP v2.9</span>
+        <span class="build-version">APP v3.0</span>
         <span class="privacy-mark">端末内保存</span>
       </footer>
     </main>
@@ -954,7 +954,7 @@ footer {
 
         <p id="setupMessage" class="setup-message" role="status"></p>
         <button id="saveSetupButton" class="save-button" type="button">このiPhoneに保存</button>
-        <p class="setup-note">元の9ファイルは「ファイル」アプリにも残しておいてください。</p>
+        <p class="setup-note">元の12ファイルは「ファイル」アプリにも残しておいてください。</p>
       </section>
     </div>
 
@@ -1085,6 +1085,14 @@ const SONGS = [
     title: "I'M GETTIN' BLUE",
     artist: "ZIGGY",
     videoDelaySeconds: 1.5,
+    videoLoop: false,
+  },
+  {
+    id: "la-vie-en-rose",
+    key: "lavieenrose",
+    title: "LA VIE EN ROSE",
+    artist: "ZIGGY",
+    videoDelaySeconds: 0,
     videoLoop: false,
   },
 ];
@@ -1321,7 +1329,7 @@ function stageLibraryFiles(fileList) {
   ).length;
   setSetupMessage(
     matched > 0
-      ? `${matched}ファイルを自動照合しました（3点揃った曲: ${completeSongs}/3）`
+      ? `${matched}ファイルを自動照合しました（3点揃った曲: ${completeSongs}/${SONGS.length}）`
       : "対応するM4A・LRC・MP4が見つかりませんでした。ファイル名を確認してください。",
     matched === 0,
   );
@@ -1699,8 +1707,8 @@ async function refreshSetupStatus() {
 
   state.allSongsReady = readyCount === SONGS.length;
   $("storageStatus").textContent = state.allSongsReady
-    ? `3曲保存済み・動画 ${videoCount}/3`
-    : `${readyCount}/3曲を保存済み`;
+    ? `${SONGS.length}曲保存済み・動画 ${videoCount}/${SONGS.length}`
+    : `${readyCount}/${SONGS.length}曲を保存済み`;
   $("closeSetupButton").hidden = !state.allSongsReady;
   return state.allSongsReady;
 }
@@ -1820,7 +1828,7 @@ async function saveSetup() {
     state.pendingFiles.clear();
     const ready = await refreshSetupStatus();
     if (!ready) {
-      setSetupMessage("3曲それぞれの音源と歌詞を選んでください。", true);
+      setSetupMessage(`${SONGS.length}曲それぞれの音源と歌詞を選んでください。`, true);
       return;
     }
 
