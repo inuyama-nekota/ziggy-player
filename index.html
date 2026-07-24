@@ -848,7 +848,7 @@ footer {
 
     </style>
     <title>ZIGGY PLAYER</title>
-    <!-- Standalone build v3.1: LA VIE EN ROSE two-second video delay -->
+    <!-- Standalone build v3.2: LA VIE EN ROSE audio and lyrics only -->
   </head>
   <body>
     <video id="backgroundVideo" class="background-video" muted playsinline preload="auto"></video>
@@ -916,7 +916,7 @@ footer {
 
       <footer>
         <span id="storageStatus">音源未設定</span>
-        <span class="build-version">APP v3.1</span>
+        <span class="build-version">APP v3.2</span>
         <span class="privacy-mark">端末内保存</span>
       </footer>
     </main>
@@ -954,7 +954,7 @@ footer {
 
         <p id="setupMessage" class="setup-message" role="status"></p>
         <button id="saveSetupButton" class="save-button" type="button">このiPhoneに保存</button>
-        <p class="setup-note">元の12ファイルは「ファイル」アプリにも残しておいてください。</p>
+        <p class="setup-note">元の11ファイルは「ファイル」アプリにも残しておいてください。</p>
       </section>
     </div>
 
@@ -1092,10 +1092,12 @@ const SONGS = [
     key: "lavieenrose",
     title: "LA VIE EN ROSE",
     artist: "ZIGGY",
-    videoDelaySeconds: 2,
+    videoEnabled: false,
     videoLoop: false,
   },
 ];
+
+const VIDEO_SONG_COUNT = SONGS.filter((song) => song.videoEnabled !== false).length;
 
 const LYRIC_CORRECTIONS = {
   gloria: [
@@ -1311,6 +1313,7 @@ function stageLibraryFiles(fileList) {
     const kind = mediaKind(file);
     const song = kind ? songForFile(file) : null;
     if (!kind || !song) continue;
+    if (kind === "video" && song.videoEnabled === false) continue;
     const key = `${song.id}:${kind}`;
     state.pendingFiles.set(key, file);
     stagedKeys.add(key);
@@ -1325,11 +1328,12 @@ function stageLibraryFiles(fileList) {
   }
 
   const completeSongs = SONGS.filter((song) =>
-    ["audio", "lyrics", "video"].every((kind) => stagedKeys.has(`${song.id}:${kind}`)),
+    ["audio", "lyrics", ...(song.videoEnabled === false ? [] : ["video"])]
+      .every((kind) => stagedKeys.has(`${song.id}:${kind}`)),
   ).length;
   setSetupMessage(
     matched > 0
-      ? `${matched}ファイルを自動照合しました（3点揃った曲: ${completeSongs}/${SONGS.length}）`
+      ? `${matched}ファイルを自動照合しました（必要素材が揃った曲: ${completeSongs}/${SONGS.length}）`
       : "対応するM4A・LRC・MP4が見つかりませんでした。ファイル名を確認してください。",
     matched === 0,
   );
@@ -1606,7 +1610,7 @@ async function loadSong(index, { autoplay = false, direction = null } = {}) {
     audio.src = state.objectUrl;
     audio.load();
 
-    if (hasStoredVideo(record)) {
+    if (song.videoEnabled !== false && hasStoredVideo(record)) {
       const videoBlob = await readStoredVideo(record);
       if (token !== state.loadToken) return;
       state.videoUrl = URL.createObjectURL(videoBlob);
@@ -1679,8 +1683,15 @@ function buildSetupRows() {
       input.addEventListener("change", handleFileSelection);
     }
     const clearVideoButton = fragment.querySelector('[data-action="clear-video"]');
-    clearVideoButton.dataset.songId = song.id;
-    clearVideoButton.addEventListener("click", handleClearVideo);
+    if (song.videoEnabled === false) {
+      const videoInput = fragment.querySelector('[data-kind="video"]');
+      videoInput.disabled = true;
+      videoInput.closest(".file-picker").hidden = true;
+      clearVideoButton.hidden = true;
+    } else {
+      clearVideoButton.dataset.songId = song.id;
+      clearVideoButton.addEventListener("click", handleClearVideo);
+    }
 
     container.appendChild(fragment);
   }
@@ -1697,17 +1708,17 @@ async function refreshSetupStatus() {
     const videoName = article.querySelector('[data-file-name="video"]');
     audioName.textContent = record?.audioName || "未選択";
     lyricsName.textContent = record?.lyricsName || "未選択";
-    videoName.textContent = record?.videoName || "未選択";
+    videoName.textContent = song.videoEnabled === false ? "動画なし" : record?.videoName || "未選択";
     audioName.classList.toggle("stored", hasStoredAudio(record));
     lyricsName.classList.toggle("stored", Boolean(record?.lyricsText));
-    videoName.classList.toggle("stored", hasStoredVideo(record));
+    videoName.classList.toggle("stored", song.videoEnabled !== false && hasStoredVideo(record));
     if (hasStoredAudio(record) && record?.lyricsText) readyCount += 1;
-    if (hasStoredVideo(record)) videoCount += 1;
+    if (song.videoEnabled !== false && hasStoredVideo(record)) videoCount += 1;
   }
 
   state.allSongsReady = readyCount === SONGS.length;
   $("storageStatus").textContent = state.allSongsReady
-    ? `${SONGS.length}曲保存済み・動画 ${videoCount}/${SONGS.length}`
+    ? `${SONGS.length}曲保存済み・動画 ${videoCount}/${VIDEO_SONG_COUNT}`
     : `${readyCount}/${SONGS.length}曲を保存済み`;
   $("closeSetupButton").hidden = !state.allSongsReady;
   return state.allSongsReady;
