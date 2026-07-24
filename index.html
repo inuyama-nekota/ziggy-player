@@ -848,7 +848,7 @@ footer {
 
     </style>
     <title>ZIGGY PLAYER</title>
-    <!-- Standalone build v3.2: LA VIE EN ROSE audio and lyrics only -->
+    <!-- Standalone build v3.3: iPhone LRC file picker compatibility -->
   </head>
   <body>
     <video id="backgroundVideo" class="background-video" muted playsinline preload="auto"></video>
@@ -916,7 +916,7 @@ footer {
 
       <footer>
         <span id="storageStatus">音源未設定</span>
-        <span class="build-version">APP v3.2</span>
+        <span class="build-version">APP v3.3</span>
         <span class="privacy-mark">端末内保存</span>
       </footer>
     </main>
@@ -945,7 +945,7 @@ footer {
           </label>
           <label class="library-picker secondary">
             ファイルをまとめて選択
-            <input id="multiFilePicker" type="file" accept="audio/*,video/*,.m4a,.mp3,.aac,.wav,.flac,.lrc,.mp4,.m4v,.mov" multiple />
+            <input id="multiFilePicker" type="file" multiple />
           </label>
           <p class="library-hint">フォルダ選択が表示されないiPhoneでは、右側からZIGGYフォルダ内のファイルをまとめて選んでください。</p>
         </div>
@@ -970,7 +970,7 @@ footer {
           <label class="file-picker">
             <span class="file-picker-label">歌詞を選ぶ</span>
             <span class="file-name" data-file-name="lyrics">未選択</span>
-            <input type="file" accept="text/plain,.lrc" data-kind="lyrics" />
+            <input type="file" data-kind="lyrics" />
           </label>
           <label class="file-picker">
             <span class="file-picker-label">動画を選ぶ</span>
