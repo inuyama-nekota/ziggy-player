@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="ZIGGY PLAYER" />
-    <meta name="description" content="ZIGGYの4曲を楽しむ、端末内保存型の個人用Webプレイヤー" />
+    <meta name="description" content="ZIGGYの5曲を楽しむ、端末内保存型の個人用Webプレイヤー" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="apple-touch-icon" href="./apple-touch-icon.png?v=3" />
     <link rel="icon" href="./apple-touch-icon.png?v=3" type="image/png" />
@@ -848,7 +848,7 @@ footer {
 
     </style>
     <title>ZIGGY PLAYER</title>
-    <!-- Standalone build v3.3: iPhone LRC file picker compatibility -->
+    <!-- Standalone build v3.4: SING MY SONG added -->
   </head>
   <body>
     <video id="backgroundVideo" class="background-video" muted playsinline preload="auto"></video>
@@ -916,7 +916,7 @@ footer {
 
       <footer>
         <span id="storageStatus">音源未設定</span>
-        <span class="build-version">APP v3.3</span>
+        <span class="build-version">APP v3.4</span>
         <span class="privacy-mark">端末内保存</span>
       </footer>
     </main>
@@ -954,7 +954,7 @@ footer {
 
         <p id="setupMessage" class="setup-message" role="status"></p>
         <button id="saveSetupButton" class="save-button" type="button">このiPhoneに保存</button>
-        <p class="setup-note">元の11ファイルは「ファイル」アプリにも残しておいてください。</p>
+        <p class="setup-note">元の14ファイルは「ファイル」アプリにも残しておいてください。</p>
       </section>
     </div>
 
@@ -1093,6 +1093,14 @@ const SONGS = [
     title: "LA VIE EN ROSE",
     artist: "ZIGGY",
     videoEnabled: false,
+    videoLoop: false,
+  },
+  {
+    id: "sing-my-song",
+    key: "singmysong",
+    title: "SING MY SONG",
+    artist: "ZIGGY",
+    videoDelaySeconds: 0,
     videoLoop: false,
   },
 ];
@@ -1620,7 +1628,9 @@ async function loadSong(index, { autoplay = false, direction = null } = {}) {
       video.removeAttribute("loop");
       video.loop = song.videoLoop !== false;
       video.load();
-      video.classList.toggle("is-visible", (song.videoDelaySeconds || 0) <= 0);
+      // Keep the background black until playback actually starts so a
+      // zero-delay video fades in from the song's exact 0-second position.
+      video.classList.remove("is-visible");
     } else {
       clearBackgroundVideo();
     }
@@ -1961,7 +1971,8 @@ function attachEvents() {
   });
   video.addEventListener("loadedmetadata", () => {
     if (audio.paused) {
-      if (syncVideoToAudio(true)) video.classList.add("is-visible");
+      syncVideoToAudio(true);
+      video.classList.remove("is-visible");
     } else {
       playBackgroundVideo();
     }
