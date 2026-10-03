@@ -63,7 +63,7 @@ body {
   z-index: 0;
   object-fit: cover;
   opacity: 0;
-  transition: opacity 700ms ease;
+  transition: opacity var(--video-fade-duration, 700ms) ease;
 }
 
 .background-video.is-visible {
@@ -848,7 +848,7 @@ footer {
 
     </style>
     <title>ZIGGY PLAYER</title>
-    <!-- Standalone build v3.5: SING MY SONG two-second video delay -->
+    <!-- Standalone build v3.6: SING MY SONG 1.2-second delay and longer fade -->
   </head>
   <body>
     <video id="backgroundVideo" class="background-video" muted playsinline preload="auto"></video>
@@ -916,7 +916,7 @@ footer {
 
       <footer>
         <span id="storageStatus">音源未設定</span>
-        <span class="build-version">APP v3.5</span>
+        <span class="build-version">APP v3.6</span>
         <span class="privacy-mark">端末内保存</span>
       </footer>
     </main>
@@ -1100,7 +1100,8 @@ const SONGS = [
     key: "singmysong",
     title: "SING MY SONG",
     artist: "ZIGGY",
-    videoDelaySeconds: 2,
+    videoDelaySeconds: 1.2,
+    videoFadeMilliseconds: 1400,
     videoLoop: false,
   },
 ];
@@ -1589,6 +1590,10 @@ async function loadSong(index, { autoplay = false, direction = null } = {}) {
   video.pause();
   clearBackgroundVideo();
   state.songIndex = normalizedIndex;
+  video.style.setProperty(
+    "--video-fade-duration",
+    `${Number(song.videoFadeMilliseconds) || 700}ms`,
+  );
   state.lyricIndex = -1;
   state.lyrics = [];
   updateTimeline();
